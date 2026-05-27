@@ -15,8 +15,8 @@ const Navbar = ({ currentPage, setCurrentPage, cartCount }) => {
             </h1>
           </div>
           
-          <div className="flex items-center space-x-8">
-            <div className="hidden md:flex space-x-8">
+          <div className="flex items-center space-x-4 md:space-x-8">
+            <div className="flex space-x-4 md:space-x-8">
               <button 
                 onClick={() => setCurrentPage('home')}
                 className={`text-brown-dark hover:text-brown-golden transition-colors ${currentPage === 'home' ? 'border-b-2 border-brown-golden font-bold' : ''}`}

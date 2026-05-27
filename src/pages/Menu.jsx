@@ -16,10 +16,10 @@ const Menu = ({ menuItems, cart = [], addToCart, removeFromCart }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-12">
         <h1 className="font-playfair text-5xl font-bold text-brown-dark mb-4">
-          Our Artisanal Menu
+          Our Home Made Menu
         </h1>
         <p className="text-gray-600 max-w-2xl text-lg">
-          Fresh from Lawgate to your table. Hand-picked ingredients prepared with artisanal care and a touch of sun-drenched garden magic.
+          Fresh from Lawgate to your table. Hand-picked ingredients prepared with complete home-made care and a touch of sun-drenched garden magic.
         </p>
       </div>
 

@@ -21,7 +21,7 @@ const Home = ({ setCurrentPage }) => {
             Ayush Kitchen
           </h1>
           <p className="text-lg md:text-xl mb-8 max-w-2xl drop-shadow-md">
-            Nourishing the community with artisanal, farm-to-table meals crafted from the finest seasonal ingredients grown right here in the Valley.
+            100% Home Made Food. Nourishing the community with completely home-cooked meals crafted from the finest seasonal ingredients grown right here in the Valley.
           </p>
           <div className="flex flex-wrap gap-4">
             <button 
@@ -45,7 +45,7 @@ const Home = ({ setCurrentPage }) => {
               Our Philosophy
             </h2>
             <p className="text-gray-700 mb-8 leading-relaxed">
-              At Ayush Kitchen, transparency isn't just a buzzword—it's our foundation. We believe that food tastes better when you know where it comes from. Every herb, vegetable, and grain is sourced directly from Lawgate's local farmers or harvested from our own kitchen garden, ensuring that only the freshest ingredients make it to your plate.
+              At Ayush Kitchen, transparency isn't just a buzzword—it's our foundation. We completely make home-cooked meals. Every herb, vegetable, and grain is sourced directly from Lawgate's local farmers or harvested from our own kitchen garden, ensuring that only the freshest home-made ingredients make it to your plate.
             </p>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col items-center text-center">
@@ -64,7 +64,7 @@ const Home = ({ setCurrentPage }) => {
                 <div className="w-12 h-12 bg-cream rounded-full flex items-center justify-center text-green-dark mb-3">
                   <Utensils size={24} />
                 </div>
-                <span className="text-xs font-bold text-brown-dark">Artisanal Craft</span>
+                <span className="text-xs font-bold text-brown-dark">Completely Home Made</span>
               </div>
             </div>
           </div>
