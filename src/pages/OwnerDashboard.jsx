@@ -25,6 +25,20 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     });
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewItem({
+          ...newItem,
+          image: reader.result
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddItem = (e) => {
     e.preventDefault();
     if (!newItem.name || !newItem.price) return;
@@ -131,15 +145,16 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Image URL</label>
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Item Image</label>
                   <input 
-                    type="url" 
-                    name="image" 
-                    value={newItem.image} 
-                    onChange={handleInputChange}
-                    className="w-full border border-gray-200 rounded p-2 focus:ring-1 focus:ring-teal-500 outline-none"
-                    placeholder="https://..."
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="w-full border border-gray-200 rounded p-1.5 focus:ring-1 focus:ring-teal-500 outline-none text-sm text-gray-600"
                   />
+                  {newItem.image && newItem.image !== '/assets/images/default-food.jpg' && (
+                    <img src={newItem.image} alt="Preview" className="mt-2 h-16 w-24 object-cover rounded shadow-sm border border-gray-100" />
+                  )}
                 </div>
                 
                 <div>
@@ -203,7 +218,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                       <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${!item.available ? 'opacity-60 bg-gray-50' : ''}`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <span className="text-lg">{item.emoji}</span>
+                            <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded shadow-sm flex-shrink-0" />
                             <div>
                               <p className="font-bold text-brown-dark">{item.name}</p>
                               <p className="text-xs text-gray-500 truncate w-48">{item.description}</p>

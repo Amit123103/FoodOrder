@@ -25,11 +25,6 @@ function App() {
       setMenuItems(defaultMenuItems);
       localStorage.setItem('gvk_menu_v3', JSON.stringify(defaultMenuItems));
     }
-
-    const savedCart = localStorage.getItem('gvk_cart_v2');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
-    }
     
     setIsLoaded(true);
   }, []);
@@ -40,12 +35,6 @@ function App() {
       localStorage.setItem('gvk_menu_v3', JSON.stringify(menuItems));
     }
   }, [menuItems, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('gvk_cart_v2', JSON.stringify(cart));
-    }
-  }, [cart, isLoaded]);
 
   // Actions
   const addToCart = (item) => {
