@@ -17,7 +17,7 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
     address: ''
   });
 
-  const deliveryFee = 40;
+  const deliveryFee = cartTotal >= 150 ? 0 : 20;
   const finalTotal = cartTotal > 0 ? cartTotal + deliveryFee : 0;
 
   const handleInputChange = (e) => {
