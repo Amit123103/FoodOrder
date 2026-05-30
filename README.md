@@ -1,66 +1,56 @@
-# Ayush Food Junction
+# 🍽️ Ayush Food Junction
 
-A complete restaurant ordering system and admin dashboard built with React, Vite, and TailwindCSS.
+A modern, responsive, and dynamic Food Ordering Web Application built with React and Firebase.
 
-## 🔐 Admin OTP Login Instructions
-The Owner Portal uses a **Simulated 4-Digit Mobile OTP System** for prototype testing without incurring SMS costs.
-To access the Admin Dashboard:
-1. Navigate to the Owner Portal.
-2. The input will default to the owner's mobile number: `+91 9779509769`.
-3. Click **Send OTP**.
-4. Your browser will instantly display an `alert()` pop-up containing a secure 4-digit code (simulating a text message).
-5. Enter that 4-digit code into the screen and click **Verify & Login**.
+## ✨ Features
 
-## 🔥 Firebase Setup Instructions
+### Customer Experience
+*   **Beautiful UI**: Premium design with stunning color palettes, modern typography, and smooth micro-animations.
+*   **Dynamic Menu**: Browse food items organized by dynamic categories.
+*   **Real-Time Status**: Customers see instantly if the shop is Open/Closed or if Delivery/Takeaway is available.
+*   **Shopping Cart**: Easily add, remove, and manage items in the cart with real-time total calculations.
+*   **Seamless Checkout**: Smooth checkout process.
 
-The app is now fully integrated with Firebase Cloud Firestore for permanent data storage! If you are deploying this or setting up the database for the first time, follow these crucial steps in your Firebase Console:
+### Admin/Owner Dashboard
+*   **Secure OTP Login**: A robust OTP login system (with simulated fallbacks) for the owner.
+*   **Global Store Controls**: Toggle the entire restaurant's "Shop Open" and "Delivery Available" statuses with a single click.
+*   **Dynamic Category Management**: Create new categories or delete existing ones instantly from the dashboard.
+*   **Menu Management**: Add new menu items (with images and prices), edit existing ones, or toggle their immediate availability.
+*   **Real-time Database**: Powered by Firebase Firestore for instantaneous updates across all connected clients without needing a page refresh.
 
-### 1. Enable Firestore Database
-- Go to your [Firebase Console](https://console.firebase.google.com/).
-- In the left sidebar under **Build**, click on **Firestore Database**.
-- Click **Create Database**.
-- Choose a location closest to your users.
-- Start in **Test Mode** (or see security rules below if going to production).
+## 🚀 Technology Stack
 
-### 2. Firestore Security Rules
-By default, test mode expires after 30 days. To ensure your app continues to work permanently, you need to update the database Security Rules.
+*   **Frontend**: React (Vite)
+*   **Styling**: Tailwind CSS / Vanilla CSS
+*   **Backend & Database**: Firebase Firestore
+*   **Authentication**: Firebase Phone Auth (with simulated fallback)
+*   **Icons**: Lucide React
 
-Go to the **Rules** tab in Firestore and replace the code with this:
+## ⚙️ Setup Instructions
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Anyone can read menu items, but only the app can write (currently open for admin simplicity)
-    match /menuItems/{document=**} {
-      allow read, write: if true; 
-    }
-    
-    // Anyone can read and write feedbacks
-    match /feedbacks/{document=**} {
-      allow read, write: if true;
-    }
-    
-    // Allows the global order counter to increment safely
-    match /counters/{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
-*(Note: In a real enterprise app, you would lock down `write` access on `menuItems` using Firebase Authentication. Since this app uses a custom frontend password system, we leave Firestore open but rely on the React frontend to hide the admin dashboard).*
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Amit123103/FoodOrder.git
+    cd FoodOrder
+    ```
 
-### 3. Local Environment Setup
-Ensure your `.env` file exists in the root of the project with the keys you registered:
-```env
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-...
-```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-### 4. Running the App
-Run the following commands to start your local server:
-```bash
-npm install
-npm run dev
-```
+3.  **Firebase Setup:**
+    *   Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
+    *   Enable **Firestore Database**.
+    *   Update the `src/firebase.js` file with your Firebase config.
+
+4.  **Run the application locally:**
+    ```bash
+    npm run dev
+    ```
+
+## 🔒 Security & Roles
+*   The application features an Owner Login portal. Access to the dashboard allows for total control over the store's inventory, global state, and category lists.
+
+---
+*Built with ❤️ by Ayush Food Junction team.*
