@@ -7,6 +7,7 @@ const OWNER_WHATSAPP_NUMBER = "919779509769"; // <-- Change this to your actual 
 const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) => {
   const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [orderType, setOrderType] = useState('delivery'); // 'delivery' or 'takeaway'
   const [rating, setRating] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
   
@@ -17,7 +18,7 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
     address: ''
   });
 
-  const deliveryFee = cartTotal >= 150 ? 0 : 20;
+  const deliveryFee = orderType === 'takeaway' ? 0 : (cartTotal >= 150 ? 0 : 20);
   const finalTotal = cartTotal > 0 ? cartTotal + deliveryFee : 0;
 
   const handleInputChange = (e) => {
@@ -76,7 +77,12 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
       return;
     }
 
-    if (!formData.name || !formData.mobile || !formData.location || !formData.address) {
+    if (!formData.name || !formData.mobile) {
+      alert("Please fill in your name and mobile number.");
+      return;
+    }
+
+    if (orderType === 'delivery' && (!formData.location || !formData.address)) {
       alert("Please fill in all delivery details.");
       return;
     }
@@ -90,7 +96,7 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
       `- ${item.name} x${item.quantity} ₹${item.price * item.quantity}`
     ).join('\n');
 
-    const rawMessage = `🍽️ *New Order - Ayush Food Junction*\n*Order No:* ${orderNumber}\n*Time:* ${orderTime} (IST)\n*Customer:* ${formData.name}\n*Mobile:* ${formData.mobile}\n*Location:* ${formData.location}\n*Address:* ${formData.address}\n*Items:*\n${itemsText}\n*Subtotal:* ₹${cartTotal}\n*Delivery:* ₹${deliveryFee}\n*Total:* ₹${finalTotal}`;
+    const rawMessage = `🍽️ *New Order - Ayush Food Junction*\n*Order No:* ${orderNumber}\n*Type:* ${orderType === 'delivery' ? '🚚 Delivery' : '🥡 Takeaway'}\n*Time:* ${orderTime} (IST)\n*Customer:* ${formData.name}\n*Mobile:* ${formData.mobile}${orderType === 'delivery' ? `\n*Location:* ${formData.location}\n*Address:* ${formData.address}` : ''}\n*Items:*\n${itemsText}\n*Subtotal:* ₹${cartTotal}\n*Delivery:* ${orderType === 'takeaway' ? 'N/A' : `₹${deliveryFee}`}\n*Total:* ₹${finalTotal}`;
     
     const whatsappUrl = `https://wa.me/${OWNER_WHATSAPP_NUMBER}?text=${encodeURIComponent(rawMessage)}`;
     window.open(whatsappUrl, '_blank');
@@ -210,23 +216,37 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
           <div className="flex-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
               <h2 className="font-playfair text-2xl font-bold text-green-dark mb-6 border-b border-gray-100 pb-4">
-                Delivery Details
+                Order Details
               </h2>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors"
-                  />
-                </div>
+              <div className="flex gap-4 mb-8">
+                <button
+                  onClick={() => setOrderType('delivery')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors ${orderType === 'delivery' ? 'bg-teal-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  🚚 Delivery
+                </button>
+                <button
+                  onClick={() => setOrderType('takeaway')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors ${orderType === 'takeaway' ? 'bg-teal-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  🥡 Takeaway
+                </button>
+              </div>
 
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Full Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter your full name"
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors"
+                    />
+                  </div>
                   <div>
                     <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Mobile Number</label>
                     <input
@@ -238,32 +258,37 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
                       className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Location</label>
-                    <select
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors text-brown-dark"
-                    >
-                      <option value="">Select Location</option>
-                      <option value="Green Valley">Green Valley</option>
-                      <option value="Lawgate">Lawgate</option>
-                    </select>
-                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Address / Landmark</label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Building Name, House No, or nearby landmark..."
-                    rows="3"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors resize-none"
-                  ></textarea>
-                </div>
+                {orderType === 'delivery' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Location</label>
+                      <select
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors text-brown-dark"
+                      >
+                        <option value="">Select Location</option>
+                        <option value="Green Valley">Green Valley</option>
+                        <option value="Lawgate">Lawgate</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">Address / Landmark</label>
+                      <textarea
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="Building Name, House No, or nearby landmark..."
+                        rows="3"
+                        className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors resize-none"
+                      ></textarea>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
