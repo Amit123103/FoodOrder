@@ -7,16 +7,16 @@ const Navbar = ({ currentPage, setCurrentPage, cartCount }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           <div 
-            className="flex-shrink-0 cursor-pointer" 
+            className="flex-shrink-0 cursor-pointer max-w-[50%]" 
             onClick={() => setCurrentPage('home')}
           >
-            <h1 className="font-playfair italic font-bold text-3xl text-brown-golden">
+            <h1 className="font-playfair italic font-bold text-xl md:text-3xl text-brown-golden leading-tight">
               Ayush Food Junction
             </h1>
           </div>
           
-          <div className="flex items-center space-x-4 md:space-x-8">
-            <div className="flex space-x-4 md:space-x-8">
+          <div className="flex items-center space-x-2 md:space-x-8">
+            <div className="flex space-x-3 md:space-x-8 text-sm md:text-base">
               <button 
                 onClick={() => setCurrentPage('home')}
                 className={`text-brown-dark hover:text-brown-golden transition-colors ${currentPage === 'home' ? 'border-b-2 border-brown-golden font-bold' : ''}`}
