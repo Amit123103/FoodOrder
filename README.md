@@ -40,6 +40,11 @@ service cloud.firestore {
     match /feedbacks/{document=**} {
       allow read, write: if true;
     }
+    
+    // Allows the global order counter to increment safely
+    match /counters/{document=**} {
+      allow read, write: if true;
+    }
   }
 }
 ```

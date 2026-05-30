@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Lock, MessageCircle, Star } from 'lucide-react';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 const OWNER_WHATSAPP_NUMBER = "919779509769"; // <-- Change this to your actual WhatsApp number
 
 const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) => {
   const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [rating, setRating] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
   
@@ -26,7 +27,50 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
     });
   };
 
-  const handleWhatsAppOrder = () => {
+  const getNextOrderNumber = async () => {
+    try {
+      const counterRef = doc(db, 'counters', 'dailyOrder');
+      
+      const { newCount, istTimeStr } = await runTransaction(db, async (transaction) => {
+        const sfDoc = await transaction.get(counterRef);
+        
+        const now = new Date();
+        const istTimeStr = now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
+        const istDate = new Date(istTimeStr);
+        
+        // Business day shifts at 6:00 AM IST.
+        let businessDay = new Date(istDate);
+        if (businessDay.getHours() < 6) {
+          businessDay.setDate(businessDay.getDate() - 1);
+        }
+        const businessDateStr = `${businessDay.getFullYear()}-${businessDay.getMonth() + 1}-${businessDay.getDate()}`;
+        
+        let newCount = 1;
+        if (!sfDoc.exists()) {
+          transaction.set(counterRef, { count: 1, businessDateStr });
+        } else {
+          const data = sfDoc.data();
+          if (data.businessDateStr === businessDateStr) {
+            newCount = (data.count || 0) + 1;
+          } else {
+            newCount = 1; // Reset for new day
+          }
+          transaction.update(counterRef, { count: newCount, businessDateStr });
+        }
+        return { newCount, istTimeStr };
+      });
+      return { orderNumber: newCount, orderTime: istTimeStr };
+    } catch (error) {
+      console.error("Counter transaction failed: ", error);
+      const now = new Date();
+      return { 
+        orderNumber: 'N/A', 
+        orderTime: now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}) 
+      };
+    }
+  };
+
+  const handleWhatsAppOrder = async () => {
     if (cart.length === 0) {
       alert("Your cart is empty!");
       return;
@@ -37,16 +81,22 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
       return;
     }
 
+    setIsProcessingOrder(true);
+    
+    // Get Atomic Order Number and IST Time
+    const { orderNumber, orderTime } = await getNextOrderNumber();
+
     const itemsText = cart.map(item =>
       `- ${item.name} x${item.quantity} ₹${item.price * item.quantity}`
     ).join('%0A');
 
-    const message = `🍽️ *New Order - Ayush Food Junction*%0A*Customer:* ${formData.name}%0A*Mobile:* ${formData.mobile}%0A*Location:* ${formData.location}%0A*Address:* ${formData.address}%0A*Items:*%0A${itemsText}%0A*Subtotal:* ₹${cartTotal}%0A*Delivery:* ₹${deliveryFee}%0A*Total:* ₹${finalTotal}`;
+    const message = `🍽️ *New Order - Ayush Food Junction*%0A*Order #:* ${orderNumber}%0A*Time:* ${orderTime} (IST)%0A*Customer:* ${formData.name}%0A*Mobile:* ${formData.mobile}%0A*Location:* ${formData.location}%0A*Address:* ${formData.address}%0A*Items:*%0A${itemsText}%0A*Subtotal:* ₹${cartTotal}%0A*Delivery:* ₹${deliveryFee}%0A*Total:* ₹${finalTotal}`;
     const whatsappUrl = `https://wa.me/${OWNER_WHATSAPP_NUMBER}?text=${message}`;
     window.open(whatsappUrl, '_blank');
 
     // Clear the cart and show feedback screen
     setCart([]);
+    setIsProcessingOrder(false);
     setIsOrderSubmitted(true);
   };
 
@@ -260,10 +310,11 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
 
                   <button
                     onClick={handleWhatsAppOrder}
-                    className="w-full bg-orange-primary hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-3 text-lg"
+                    disabled={isProcessingOrder}
+                    className={`w-full text-white font-bold py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-3 text-lg ${isProcessingOrder ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-primary hover:bg-orange-600'}`}
                   >
                     <MessageCircle size={24} />
-                    Send Order on WhatsApp
+                    {isProcessingOrder ? 'Generating Order #...' : 'Send Order on WhatsApp'}
                   </button>
 
                   <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
