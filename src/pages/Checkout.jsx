@@ -88,10 +88,11 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
 
     const itemsText = cart.map(item =>
       `- ${item.name} x${item.quantity} ₹${item.price * item.quantity}`
-    ).join('%0A');
+    ).join('\n');
 
-    const message = `🍽️ *New Order - Ayush Food Junction*%0A*Order #:* ${orderNumber}%0A*Time:* ${orderTime} (IST)%0A*Customer:* ${formData.name}%0A*Mobile:* ${formData.mobile}%0A*Location:* ${formData.location}%0A*Address:* ${formData.address}%0A*Items:*%0A${itemsText}%0A*Subtotal:* ₹${cartTotal}%0A*Delivery:* ₹${deliveryFee}%0A*Total:* ₹${finalTotal}`;
-    const whatsappUrl = `https://wa.me/${OWNER_WHATSAPP_NUMBER}?text=${message}`;
+    const rawMessage = `🍽️ *New Order - Ayush Food Junction*\n*Order No:* ${orderNumber}\n*Time:* ${orderTime} (IST)\n*Customer:* ${formData.name}\n*Mobile:* ${formData.mobile}\n*Location:* ${formData.location}\n*Address:* ${formData.address}\n*Items:*\n${itemsText}\n*Subtotal:* ₹${cartTotal}\n*Delivery:* ₹${deliveryFee}\n*Total:* ₹${finalTotal}`;
+    
+    const whatsappUrl = `https://wa.me/${OWNER_WHATSAPP_NUMBER}?text=${encodeURIComponent(rawMessage)}`;
     window.open(whatsappUrl, '_blank');
 
     // Clear the cart and show feedback screen
