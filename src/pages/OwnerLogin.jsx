@@ -31,7 +31,7 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
       setStep('otp');
     } catch (err) {
       console.error(err);
-      setError('Failed to send SMS. Make sure Phone Auth is enabled in Firebase and you are using a testing number locally.');
+      setError('Failed to send SMS. Please ensure your mobile number is correct and try again.');
     }
   };
 
