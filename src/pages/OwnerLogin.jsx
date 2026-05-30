@@ -1,35 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
   const [step, setStep] = useState('mobile');
-  const [mobile, setMobile] = useState('+91 9779509769');
   const [otpInput, setOtpInput] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [error, setError] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState(null);
 
-  const handleSendOtp = (e) => {
-    e.preventDefault();
-    if (!mobile.trim() || mobile.length < 10) {
-      setError('Please enter a valid mobile number');
-      return;
+  // Hardcoded, locked Admin Number
+  const adminMobile = '+919779509769';
+
+  useEffect(() => {
+    // Initialize the invisible reCAPTCHA for Firebase Phone Auth
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      });
     }
+  }, []);
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
     setError('');
-    // Generate secure 4-digit OTP
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(code);
-    setStep('otp');
-    // Simulate sending SMS via browser alert
-    setTimeout(() => {
-      alert(`📱 MOCK SMS:\n\nYour Ayush Food Junction Owner OTP is: ${code}`);
-    }, 500);
+    
+    try {
+      const appVerifier = window.recaptchaVerifier;
+      const result = await signInWithPhoneNumber(auth, adminMobile, appVerifier);
+      setConfirmationResult(result);
+      setStep('otp');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to send SMS. Make sure Phone Auth is enabled in Firebase and you are using a testing number locally.');
+    }
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    if (otpInput === generatedOtp) {
+    if (!confirmationResult) return;
+    
+    try {
+      await confirmationResult.confirm(otpInput);
       setIsOwnerLoggedIn(true);
       setCurrentPage('owner_dashboard');
-    } else {
+    } catch (err) {
+      console.error(err);
       setError('Invalid OTP code. Please try again.');
     }
   };
@@ -44,19 +59,22 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
           <p className="text-gray-500 font-lato">Owner Portal Login</p>
         </div>
         
+        {/* Invisible reCAPTCHA container required by Firebase */}
+        <div id="recaptcha-container"></div>
+
         {step === 'mobile' ? (
           <form onSubmit={handleSendOtp} className="space-y-6">
             <div>
               <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase">
-                Registered Mobile Number
+                Admin Mobile Number
               </label>
               <input 
                 type="text" 
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="+91 XXXXX XXXXX" 
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors text-brown-dark font-bold tracking-wide"
+                value={adminMobile}
+                disabled
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-100 text-gray-500 cursor-not-allowed transition-colors font-bold tracking-wide"
               />
+              <p className="text-xs text-gray-400 mt-2">The admin number is locked for security.</p>
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
             
@@ -64,35 +82,35 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
               type="submit"
               className="w-full bg-brown-golden hover:bg-brown-dark text-white font-bold py-3 rounded-lg transition-colors shadow-md"
             >
-              Send OTP
+              Send Secure OTP
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp} className="space-y-6">
             <div className="text-center mb-6">
               <p className="text-sm text-gray-600">
-                OTP sent to <span className="font-bold">{mobile}</span>
+                Secure OTP sent to <span className="font-bold">{adminMobile}</span>
               </p>
               <button 
                 type="button" 
                 onClick={() => { setStep('mobile'); setOtpInput(''); setError(''); }}
                 className="text-teal-600 hover:text-teal-700 text-sm font-bold mt-1"
               >
-                Change Number
+                Go Back
               </button>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-brown-dark tracking-wider mb-2 uppercase text-center">
-                Enter 4-Digit OTP
+                Enter 6-Digit OTP
               </label>
               <input 
                 type="text" 
-                maxLength="4"
+                maxLength="6"
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                placeholder="0000" 
-                className="w-full border border-gray-200 rounded-lg px-4 py-4 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors text-center text-3xl font-bold tracking-[1em]"
+                placeholder="000000" 
+                className="w-full border border-gray-200 rounded-lg px-4 py-4 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white transition-colors text-center text-3xl font-bold tracking-[0.5em]"
               />
               {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
             </div>
