@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 
-const Menu = ({ menuItems, cart = [], addToCart, removeFromCart }) => {
+const Menu = ({ menuItems, cart = [], addToCart, removeFromCart, isShopOpen = true, categories = [] }) => {
   const [activeCategory, setActiveCategory] = useState('All');
   
-  // Filter only available items, then by category
+  // Filter by category
   const visibleItems = menuItems.filter(item => {
-    if (!item.available) return false;
     if (activeCategory === 'All') return true;
     return item.category === activeCategory;
   });
 
-  const categories = ['All', 'Starters', 'Main Course', 'Drinks', 'Desserts'];
+  const filterCategories = ['All', ...categories];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -25,7 +24,7 @@ const Menu = ({ menuItems, cart = [], addToCart, removeFromCart }) => {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-10">
-        {categories.map(category => (
+        {filterCategories.map(category => (
           <button
             key={category}
             onClick={() => setActiveCategory(category)}
@@ -43,15 +42,22 @@ const Menu = ({ menuItems, cart = [], addToCart, removeFromCart }) => {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {visibleItems.map(item => (
-          <div key={item.id} className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col hover:shadow-xl transition-shadow border border-gray-100 group">
+          <div key={item.id} className={`bg-white rounded-2xl shadow-md overflow-hidden flex flex-col hover:shadow-xl transition-shadow border border-gray-100 group ${!item.available ? 'opacity-75' : ''}`}>
             <div className="relative h-48 overflow-hidden bg-cream">
               <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brown-dark shadow-sm z-10 flex items-center gap-1">
                 <span>{item.emoji}</span> {item.category}
               </div>
+              {!item.available && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                  <span className="bg-red-500 text-white font-bold px-4 py-2 rounded-full transform -rotate-12 border-2 border-white shadow-lg">
+                    Out of Stock
+                  </span>
+                </div>
+              )}
               <img 
                 src={item.image} 
                 alt={item.name} 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!item.available ? 'grayscale' : ''}`}
               />
             </div>
             
@@ -64,28 +70,46 @@ const Menu = ({ menuItems, cart = [], addToCart, removeFromCart }) => {
                 {item.description}
               </p>
               
-              {cart && cart.find(c => c.id === item.id) ? (
-                <div className="w-full flex items-center justify-between bg-green-sage text-white font-bold py-2 px-4 rounded-lg mt-auto">
+              {isShopOpen ? (
+                item.available ? (
+                  cart && cart.find(c => c.id === item.id) ? (
+                    <div className="w-full flex items-center justify-between bg-green-sage text-white font-bold py-2 px-4 rounded-lg mt-auto">
+                      <button 
+                        onClick={() => removeFromCart(item)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      >
+                        -
+                      </button>
+                      <span>{cart.find(c => c.id === item.id).quantity} in cart</span>
+                      <button 
+                        onClick={() => addToCart(item)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => addToCart(item)}
+                      className="w-full bg-green-dark hover:bg-green-sage text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2 mt-auto"
+                    >
+                      <span>+</span> Add to Cart
+                    </button>
+                  )
+                ) : (
                   <button 
-                    onClick={() => removeFromCart(item)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                    disabled
+                    className="w-full bg-gray-200 text-gray-500 font-bold py-3 rounded-lg flex justify-center items-center gap-2 mt-auto cursor-not-allowed"
                   >
-                    -
+                    Unavailable
                   </button>
-                  <span>{cart.find(c => c.id === item.id).quantity} in cart</span>
-                  <button 
-                    onClick={() => addToCart(item)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
+                )
               ) : (
                 <button 
-                  onClick={() => addToCart(item)}
-                  className="w-full bg-green-dark hover:bg-green-sage text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2 mt-auto"
+                  disabled
+                  className="w-full bg-gray-200 text-gray-500 font-bold py-3 rounded-lg flex justify-center items-center gap-2 mt-auto cursor-not-allowed"
                 >
-                  <span>+</span> Add to Cart
+                  Shop Closed
                 </button>
               )}
             </div>

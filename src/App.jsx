@@ -7,7 +7,7 @@ import Checkout from './pages/Checkout';
 import OwnerLogin from './pages/OwnerLogin';
 import OwnerDashboard from './pages/OwnerDashboard';
 import { defaultMenuItems } from './data';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 function App() {
@@ -18,6 +18,9 @@ function App() {
   const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [isDeliveryAvailable, setIsDeliveryAvailable] = useState(true);
+  const [isShopOpen, setIsShopOpen] = useState(true);
+  const [categories, setCategories] = useState(['Starters', 'Main Course', 'Drinks', 'Desserts', 'Snacks', 'Ice Creams', 'Groceries', 'Cigarettes']);
 
   // Load real-time data from Firebase Firestore
   useEffect(() => {
@@ -25,7 +28,9 @@ function App() {
     const unsubMenu = onSnapshot(collection(db, 'menuItems'), (snapshot) => {
       const items = [];
       snapshot.forEach(doc => {
-        items.push({ id: doc.id, ...doc.data() });
+        if (doc.id !== '_store_settings_' && doc.id !== '_store_categories_') {
+          items.push({ id: doc.id, ...doc.data() });
+        }
       });
       
       // Optional: if database is completely empty on first run, you might want to manually 
@@ -44,11 +49,83 @@ function App() {
       setFeedbacks(fb);
     });
 
+    // Listen to store settings
+    const unsubSettings = onSnapshot(doc(db, 'menuItems', '_store_settings_'), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        if (data.isDeliveryAvailable !== undefined) {
+          setIsDeliveryAvailable(data.isDeliveryAvailable);
+        }
+        if (data.isShopOpen !== undefined) {
+          setIsShopOpen(data.isShopOpen);
+        }
+      } else {
+        // Create the doc if it doesn't exist
+        setDoc(doc(db, 'menuItems', '_store_settings_'), { isDeliveryAvailable: true, isShopOpen: true });
+      }
+    });
+
+    // Listen to store categories
+    const unsubCategories = onSnapshot(doc(db, 'menuItems', '_store_categories_'), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        if (data.list && Array.isArray(data.list)) {
+          setCategories(data.list);
+        }
+      } else {
+        // Create the doc if it doesn't exist
+        setDoc(doc(db, 'menuItems', '_store_categories_'), { 
+          list: ['Starters', 'Main Course', 'Drinks', 'Desserts', 'Snacks', 'Ice Creams', 'Groceries', 'Cigarettes']
+        });
+      }
+    });
+
+    // One-time wipe and seed for Egg Curry
+    const wipeAndSeed = async () => {
+      try {
+        const { getDocs, deleteDoc, addDoc, collection, doc } = await import('firebase/firestore');
+        const snapshot = await getDocs(collection(db, 'menuItems'));
+        
+        let hasEggCurry = false;
+        snapshot.forEach(d => {
+          if (d.data().name && d.data().name.toLowerCase() === 'egg curry') hasEggCurry = true;
+        });
+
+        if (!hasEggCurry) {
+          // Delete all
+          const deletePromises = [];
+          snapshot.forEach(d => {
+            if (d.id !== '_store_settings_' && d.id !== '_store_categories_') {
+              deletePromises.push(deleteDoc(doc(db, 'menuItems', d.id)));
+            }
+          });
+          await Promise.all(deletePromises);
+          
+          // Add Egg Curry
+          await addDoc(collection(db, 'menuItems'), {
+            name: 'Egg Curry',
+            category: 'Main Course',
+            price: 150,
+            description: 'Delicious homestyle egg curry with rich, spiced gravy.',
+            available: true,
+            emoji: '🥚',
+            image: 'https://images.unsplash.com/photo-1598514982205-f36b96d1e8d4?auto=format&fit=crop&w=500',
+            createdAt: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.error("Wipe and seed failed:", err);
+      }
+    };
+    wipeAndSeed();
+
     setIsLoaded(true);
 
     return () => {
       unsubMenu();
       unsubFeedbacks();
+      unsubSettings();
+      unsubCategories();
     };
   }, []);
 
@@ -86,9 +163,9 @@ function App() {
       case 'home':
         return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} />;
       case 'menu':
-        return <Menu menuItems={menuItems} cart={cart} addToCart={addToCart} removeFromCart={removeFromCart} />;
+        return <Menu menuItems={menuItems} cart={cart} addToCart={addToCart} removeFromCart={removeFromCart} isShopOpen={isShopOpen} categories={categories} />;
       case 'checkout':
-        return <Checkout cart={cart} cartTotal={cartTotal} setCart={setCart} setCurrentPage={setCurrentPage} setFeedbacks={setFeedbacks} />;
+        return <Checkout cart={cart} cartTotal={cartTotal} setCart={setCart} setCurrentPage={setCurrentPage} setFeedbacks={setFeedbacks} isDeliveryAvailable={isDeliveryAvailable} isShopOpen={isShopOpen} />;
       case 'owner_login':
         return <OwnerLogin setIsOwnerLoggedIn={setIsOwnerLoggedIn} setCurrentPage={setCurrentPage} />;
       case 'owner_dashboard':
@@ -98,6 +175,9 @@ function App() {
             setCurrentPage={setCurrentPage}
             menuItems={menuItems}
             setMenuItems={setMenuItems}
+            isDeliveryAvailable={isDeliveryAvailable}
+            isShopOpen={isShopOpen}
+            categories={categories}
           />
         ) : (
           <OwnerLogin setIsOwnerLoggedIn={setIsOwnerLoggedIn} setCurrentPage={setCurrentPage} />
@@ -109,15 +189,22 @@ function App() {
 
   if (!isLoaded) return <div className="h-screen flex items-center justify-center bg-cream font-playfair text-2xl text-brown-golden">Loading...</div>;
 
+  const isCustomerPage = currentPage !== 'owner_dashboard' && currentPage !== 'owner_login';
+
   return (
     <div className="min-h-screen bg-cream flex flex-col font-lato text-brown-dark">
-      {/* Hide navbar on owner pages for cleaner portal feel, or keep it? The design implies owner login is part of the app. We'll keep Navbar but hide basket if owner dashboard. */}
-      {currentPage !== 'owner_dashboard' && currentPage !== 'owner_login' && (
+      {isCustomerPage && (
         <Navbar 
           currentPage={currentPage} 
           setCurrentPage={setCurrentPage} 
           cartCount={cartCount} 
         />
+      )}
+      
+      {isCustomerPage && !isShopOpen && (
+        <div className="bg-red-600 text-white text-center py-3 font-bold shadow-md relative z-10 animate-pulse">
+          ⚠️ Today Shop Closed. We are not accepting orders at this time.
+        </div>
       )}
       
       <main className="flex-grow flex flex-col">

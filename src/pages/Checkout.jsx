@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
-import { Lock, MessageCircle, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, MessageCircle, Star, Info } from 'lucide-react';
 import { collection, addDoc, doc, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 const OWNER_WHATSAPP_NUMBER = "919779509769"; // <-- Change this to your actual WhatsApp number
 
-const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) => {
+const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks, isDeliveryAvailable, isShopOpen = true }) => {
   const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
-  const [orderType, setOrderType] = useState('delivery'); // 'delivery' or 'takeaway'
+  const [orderType, setOrderType] = useState(isDeliveryAvailable ? 'delivery' : 'takeaway'); // 'delivery' or 'takeaway'
+
+  
+  useEffect(() => {
+    if (!isDeliveryAvailable && orderType === 'delivery') {
+      setOrderType('takeaway');
+    }
+  }, [isDeliveryAvailable]);
+
   const [rating, setRating] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
   
@@ -219,19 +227,28 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
                 Order Details
               </h2>
 
-              <div className="flex gap-4 mb-8">
-                <button
-                  onClick={() => setOrderType('delivery')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors ${orderType === 'delivery' ? 'bg-teal-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  🚚 Delivery
-                </button>
-                <button
-                  onClick={() => setOrderType('takeaway')}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors ${orderType === 'takeaway' ? 'bg-teal-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  🥡 Takeaway
-                </button>
+              <div className="flex flex-col gap-3 mb-8">
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => isDeliveryAvailable && setOrderType('delivery')}
+                    disabled={!isDeliveryAvailable}
+                    className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors ${!isDeliveryAvailable ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-70' : orderType === 'delivery' ? 'bg-teal-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    🚚 Delivery {!isDeliveryAvailable && '(Unavailable)'}
+                  </button>
+                  <button
+                    onClick={() => setOrderType('takeaway')}
+                    className={`flex-1 py-3 px-4 rounded-xl font-bold transition-colors ${orderType === 'takeaway' ? 'bg-teal-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    🥡 Takeaway
+                  </button>
+                </div>
+                {!isDeliveryAvailable && (
+                  <div className="bg-orange-50 border border-orange-100 text-orange-800 px-4 py-3 rounded-lg flex items-start gap-3 text-sm">
+                    <Info className="flex-shrink-0 mt-0.5" size={18} />
+                    <p>Home delivery is currently unavailable. You can still place an order for takeaway.</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -336,11 +353,17 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) =>
 
                   <button
                     onClick={handleWhatsAppOrder}
-                    disabled={isProcessingOrder}
-                    className={`w-full text-white font-bold py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-3 text-lg ${isProcessingOrder ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-primary hover:bg-orange-600'}`}
+                    disabled={isProcessingOrder || !isShopOpen}
+                    className={`w-full text-white font-bold py-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-3 text-lg ${!isShopOpen ? 'bg-red-500 cursor-not-allowed opacity-90' : isProcessingOrder ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-primary hover:bg-orange-600'}`}
                   >
-                    <MessageCircle size={24} />
-                    {isProcessingOrder ? 'Generating Order #...' : 'Send Order on WhatsApp'}
+                    {!isShopOpen ? (
+                      'Shop Closed Today'
+                    ) : (
+                      <>
+                        <MessageCircle size={24} />
+                        {isProcessingOrder ? 'Generating Order #...' : 'Send Order on WhatsApp'}
+                      </>
+                    )}
                   </button>
 
                   <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">

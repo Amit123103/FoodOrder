@@ -1,19 +1,62 @@
 import React, { useState } from 'react';
 import { LogOut, Trash2, Edit2, Check, X } from 'lucide-react';
-import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems }) => {
+const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems, isDeliveryAvailable, isShopOpen, categories = [] }) => {
   const [newItem, setNewItem] = useState({
     name: '',
-    category: 'Starters',
+    category: categories[0] || 'Starters',
     price: '',
     description: '',
     available: true,
     emoji: '🍽️',
+    emoji: '🍽️',
     image: '/assets/images/default-food.jpg'
   });
   const [editingId, setEditingId] = useState(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    if (categories.includes(newCategoryName.trim())) {
+      alert("Category already exists!");
+      return;
+    }
+    try {
+      const updatedList = [...categories, newCategoryName.trim()];
+      await setDoc(doc(db, 'menuItems', '_store_categories_'), { list: updatedList }, { merge: true });
+      setNewCategoryName('');
+    } catch (error) {
+      console.error("Error adding category:", error);
+      alert("Failed to add category.");
+    }
+  };
+
+  const handleDeleteCategory = async (catToDelete) => {
+    if (window.confirm(`Are you sure you want to delete the category "${catToDelete}"?`)) {
+      try {
+        const updatedList = categories.filter(c => c !== catToDelete);
+        await setDoc(doc(db, 'menuItems', '_store_categories_'), { list: updatedList }, { merge: true });
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        alert("Failed to delete category.");
+      }
+    }
+  };
+
+  const toggleShopStatus = async () => {
+    try {
+      const settingsRef = doc(db, 'menuItems', '_store_settings_');
+      await setDoc(settingsRef, {
+        isShopOpen: !isShopOpen
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error toggling shop status:", error);
+      alert("Failed to update shop status.");
+    }
+  };
 
   const handleLogout = () => {
     setIsOwnerLoggedIn(false);
@@ -94,7 +137,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
       // Reset form
       setNewItem({
         name: '',
-        category: 'Starters',
+        category: categories[0] || 'Starters',
         price: '',
         description: '',
         available: true,
@@ -125,7 +168,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     setEditingId(null);
     setNewItem({
       name: '',
-      category: 'Starters',
+      category: categories[0] || 'Starters',
       price: '',
       description: '',
       available: true,
@@ -134,10 +177,36 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     });
   };
 
-  const toggleAvailability = (id) => {
-    setMenuItems(menuItems.map(item => 
-      item.id === id ? { ...item, available: !item.available } : item
-    ));
+  const toggleAvailability = async (id) => {
+    try {
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+
+      const itemRef = doc(db, 'menuItems', id);
+      await updateDoc(itemRef, {
+        available: !item.available
+      });
+      
+      // Update local state for immediate feedback
+      setMenuItems(menuItems.map(item => 
+        item.id === id ? { ...item, available: !item.available } : item
+      ));
+    } catch (error) {
+      console.error("Error updating availability:", error);
+      alert("Failed to update item availability.");
+    }
+  };
+
+  const toggleGlobalDelivery = async () => {
+    try {
+      const settingsRef = doc(db, 'menuItems', '_store_settings_');
+      await setDoc(settingsRef, {
+        isDeliveryAvailable: !isDeliveryAvailable
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error toggling delivery:", error);
+      alert("Failed to update delivery settings.");
+    }
   };
 
   const deleteItem = async (id) => {
@@ -171,10 +240,83 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+        
+        {/* Global Settings */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <h2 className="font-playfair text-xl font-bold text-brown-dark mb-1">Store Controls</h2>
+            <p className="text-sm text-gray-500">Manage your restaurant's global availability.</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            {/* Shop Status Toggle */}
+            <div className="flex items-center justify-between gap-4 bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 flex-1 md:flex-none">
+              <span className={`font-bold text-sm ${isShopOpen ? 'text-green-600' : 'text-red-500'}`}>
+                {isShopOpen ? '🟢 Shop Open' : '🔴 Shop Closed'}
+              </span>
+              <button 
+                onClick={toggleShopStatus}
+                className={`relative inline-flex items-center h-8 rounded-full w-14 transition-colors focus:outline-none ${isShopOpen ? 'bg-green-500' : 'bg-red-400'}`}
+              >
+                <span className={`inline-block w-6 h-6 transform bg-white rounded-full shadow-sm transition-transform ${isShopOpen ? 'translate-x-7' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {/* Delivery Toggle */}
+            <div className={`flex items-center justify-between gap-4 bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 flex-1 md:flex-none transition-opacity ${!isShopOpen ? 'opacity-50 pointer-events-none' : ''}`}>
+              <span className={`font-bold text-sm ${isDeliveryAvailable ? 'text-teal-600' : 'text-gray-500'}`}>
+                {isDeliveryAvailable ? '🚚 Delivery Available' : '🥡 Takeaway Only'}
+              </span>
+              <button 
+                onClick={toggleGlobalDelivery}
+                className={`relative inline-flex items-center h-8 rounded-full w-14 transition-colors focus:outline-none ${isDeliveryAvailable ? 'bg-teal-500' : 'bg-gray-300'}`}
+              >
+                <span className={`inline-block w-6 h-6 transform bg-white rounded-full shadow-sm transition-transform ${isDeliveryAvailable ? 'translate-x-7' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Add New Item Form */}
-          <div className="lg:col-span-1">
+          {/* Left Column: Manage Categories & Add Item */}
+          <div className="lg:col-span-1 space-y-8">
+            
+            {/* Manage Categories */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h2 className="font-playfair text-xl font-bold text-brown-dark mb-4 border-b border-gray-100 pb-3">
+                Manage Categories
+              </h2>
+              <form onSubmit={handleAddCategory} className="flex gap-2 mb-4">
+                <input 
+                  type="text" 
+                  value={newCategoryName} 
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="New Category Name"
+                  className="flex-1 border border-gray-200 rounded p-2 focus:ring-1 focus:ring-teal-500 outline-none text-sm"
+                  required
+                />
+                <button type="submit" className="bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 rounded transition-colors text-sm">
+                  Add
+                </button>
+              </form>
+              <div className="max-h-48 overflow-y-auto pr-2 flex flex-col gap-2">
+                {categories.map(cat => (
+                  <div key={cat} className="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
+                    <span className="font-bold text-sm text-gray-700">{cat}</span>
+                    <button 
+                      onClick={() => handleDeleteCategory(cat)}
+                      className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                      title="Delete Category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add New Item Form */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h2 className="font-playfair text-xl font-bold text-brown-dark mb-6 border-b border-gray-100 pb-3">
                 {editingId ? 'Edit Item' : 'Add New Item'}
@@ -201,10 +343,9 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                       onChange={handleInputChange}
                       className="w-full border border-gray-200 rounded p-2 focus:ring-1 focus:ring-teal-500 outline-none"
                     >
-                      <option value="Starters">Starters</option>
-                      <option value="Main Course">Main Course</option>
-                      <option value="Drinks">Drinks</option>
-                      <option value="Desserts">Desserts</option>
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
