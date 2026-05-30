@@ -8,10 +8,10 @@ const Footer = ({ setCurrentPage }) => {
           {/* Column 1 */}
           <div>
             <h2 className="font-playfair font-bold text-2xl text-brown-golden mb-4">
-              Ayush Kitchen
+              Ayush Food Junction
             </h2>
             <p className="text-gray-600 text-sm">
-              © 2024 Ayush Kitchen. Fresh from Lawgate to your table. Handcrafted with love.
+              © 2024 Ayush Food Junction. Fresh from Lawgate to your table. Handcrafted with love.
             </p>
           </div>
           
@@ -21,8 +21,9 @@ const Footer = ({ setCurrentPage }) => {
               Contact & Visit
             </h3>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li>Address: Lawgate Area</li>
-              <li>Hours: 9:00 AM - 10:00 PM Daily</li>
+              <li>Address: Lawgate and Green Valley Centre, Front of Micasa PG</li>
+              <li>Contact: +91 97795 09769</li>
+              <li>Hours: 5:00 PM - 6:00 AM Daily</li>
             </ul>
           </div>
           

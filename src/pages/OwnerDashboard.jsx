@@ -11,6 +11,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     emoji: '🍽️',
     image: '/assets/images/default-food.jpg'
   });
+  const [editingId, setEditingId] = useState(null);
 
   const handleLogout = () => {
     setIsOwnerLoggedIn(false);
@@ -30,10 +31,37 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setNewItem({
-          ...newItem,
-          image: reader.result
-        });
+        // Compress image to prevent localStorage QuotaExceededError
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 500;
+          const MAX_HEIGHT = 500;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          } else if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          setNewItem(prev => ({
+            ...prev,
+            image: dataUrl
+          }));
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
@@ -43,15 +71,48 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     e.preventDefault();
     if (!newItem.name || !newItem.price) return;
     
-    const itemToAdd = {
-      ...newItem,
-      id: Date.now().toString(),
-      price: parseInt(newItem.price, 10) || 0
-    };
-    
-    setMenuItems([...menuItems, itemToAdd]);
+    if (editingId) {
+      setMenuItems(menuItems.map(item => 
+        item.id === editingId ? { ...item, ...newItem, price: parseInt(newItem.price, 10) || 0 } : item
+      ));
+      setEditingId(null);
+    } else {
+      const itemToAdd = {
+        ...newItem,
+        id: Date.now().toString(),
+        price: parseInt(newItem.price, 10) || 0
+      };
+      setMenuItems([...menuItems, itemToAdd]);
+    }
     
     // Reset form
+    setNewItem({
+      name: '',
+      category: 'Starters',
+      price: '',
+      description: '',
+      available: true,
+      emoji: '🍽️',
+      image: '/assets/images/default-food.jpg'
+    });
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setNewItem({
+      name: item.name,
+      category: item.category,
+      price: item.price.toString(),
+      description: item.description || '',
+      available: item.available,
+      emoji: item.emoji || '🍽️',
+      image: item.image || '/assets/images/default-food.jpg'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
     setNewItem({
       name: '',
       category: 'Starters',
@@ -81,7 +142,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
       <div className="bg-white border-b border-gray-200 py-4 px-8 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-4">
           <h1 className="font-playfair font-bold text-2xl text-brown-golden">
-            Ayush Kitchen
+            Ayush Food Junction
           </h1>
           <span className="text-gray-300">|</span>
           <span className="font-bold text-green-dark">Owner Dashboard</span>
@@ -101,7 +162,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h2 className="font-playfair text-xl font-bold text-brown-dark mb-6 border-b border-gray-100 pb-3">
-                Add New Item
+                {editingId ? 'Edit Item' : 'Add New Item'}
               </h2>
               <form onSubmit={handleAddItem} className="space-y-4">
                 <div>
@@ -180,12 +241,23 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                   <label htmlFor="available" className="text-sm font-bold text-gray-700">Available on Menu</label>
                 </div>
                 
-                <button 
-                  type="submit"
-                  className="w-full bg-green-dark hover:bg-green-sage text-white font-bold py-3 rounded-lg transition-colors mt-4"
-                >
-                  Add Item
-                </button>
+                <div className="flex gap-2 mt-4">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-green-dark hover:bg-green-sage text-white font-bold py-3 rounded-lg transition-colors"
+                  >
+                    {editingId ? 'Update Item' : 'Add Item'}
+                  </button>
+                  {editingId && (
+                    <button 
+                      type="button"
+                      onClick={cancelEdit}
+                      className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
           </div>
@@ -237,6 +309,15 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                         </td>
                         <td className="p-4 text-right">
                           <button 
+                            type="button"
+                            onClick={() => startEdit(item)}
+                            className="text-blue-400 hover:text-blue-600 p-2 transition-colors mr-2"
+                            title="Edit"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            type="button"
                             onClick={() => deleteItem(item.id)}
                             className="text-red-400 hover:text-red-600 p-2 transition-colors"
                             title="Delete"

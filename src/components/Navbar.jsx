@@ -11,7 +11,7 @@ const Navbar = ({ currentPage, setCurrentPage, cartCount }) => {
             onClick={() => setCurrentPage('home')}
           >
             <h1 className="font-playfair italic font-bold text-3xl text-brown-golden">
-              Ayush Kitchen
+              Ayush Food Junction
             </h1>
           </div>
           

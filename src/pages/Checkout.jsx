@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, MessageCircle } from 'lucide-react';
-const OWNER_WHATSAPP_NUMBER = "918960061745"; // <-- Change this to your actual WhatsApp number
+const OWNER_WHATSAPP_NUMBER = "919779509769"; // <-- Change this to your actual WhatsApp number
 
 const Checkout = ({ cart, cartTotal, setCart, setCurrentPage }) => {
   const [formData, setFormData] = useState({
@@ -35,10 +35,10 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage }) => {
       `- ${item.name} x${item.quantity} ₹${item.price * item.quantity}`
     ).join('%0A');
 
-    const message = `🍽️ *New Order - Ayush Kitchen*%0A*Customer:* ${formData.name}%0A*Mobile:* ${formData.mobile}%0A*Location:* ${formData.location}%0A*Address:* ${formData.address}%0A*Items:*%0A${itemsText}%0A*Subtotal:* ₹${cartTotal}%0A*Delivery:* ₹${deliveryFee}%0A*Total:* ₹${finalTotal}`;
+    const message = `🍽️ *New Order - Ayush Food Junction*%0A*Customer:* ${formData.name}%0A*Mobile:* ${formData.mobile}%0A*Location:* ${formData.location}%0A*Address:* ${formData.address}%0A*Items:*%0A${itemsText}%0A*Subtotal:* ₹${cartTotal}%0A*Delivery:* ₹${deliveryFee}%0A*Total:* ₹${finalTotal}`;
     const whatsappUrl = `https://wa.me/${OWNER_WHATSAPP_NUMBER}?text=${message}`;
     window.open(whatsappUrl, '_blank');
-    
+
     // Clear the cart and reset to home
     setCart([]);
     setCurrentPage('home');

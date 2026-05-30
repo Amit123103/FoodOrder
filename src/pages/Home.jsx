@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Clock, Leaf, Truck, Utensils } from 'lucide-react';
+import { MapPin, Clock, Leaf, Truck, Utensils, Phone } from 'lucide-react';
 
 const Home = ({ setCurrentPage }) => {
   return (
@@ -18,7 +18,7 @@ const Home = ({ setCurrentPage }) => {
             FRESH FROM LAWGATE
           </div>
           <h1 className="font-playfair text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
-            Ayush Kitchen
+            Ayush Food Junction
           </h1>
           <p className="text-lg md:text-xl mb-8 max-w-2xl drop-shadow-md">
             100% Home Made Food. Nourishing the community with completely home-cooked meals crafted from the finest seasonal ingredients grown right here in the Valley.
@@ -30,7 +30,7 @@ const Home = ({ setCurrentPage }) => {
             >
               Order Now
             </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-brown-dark font-bold py-3 px-8 rounded transition-colors shadow-lg">
+            <button onClick={() => document.getElementById('philosophy')?.scrollIntoView({ behavior: 'smooth' })} className="border-2 border-white text-white hover:bg-white hover:text-brown-dark font-bold py-3 px-8 rounded transition-colors shadow-lg">
               View Our Story
             </button>
           </div>
@@ -38,14 +38,14 @@ const Home = ({ setCurrentPage }) => {
       </section>
 
       {/* Philosophy Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section id="philosophy" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
           <div className="p-10 md:p-16 flex-1 flex flex-col justify-center">
             <h2 className="font-playfair text-4xl font-bold text-brown-golden mb-6">
               Our Philosophy
             </h2>
             <p className="text-gray-700 mb-8 leading-relaxed">
-              At Ayush Kitchen, transparency isn't just a buzzword—it's our foundation. We completely make home-cooked meals. Every herb, vegetable, and grain is sourced directly from Lawgate's local farmers or harvested from our own kitchen garden, ensuring that only the freshest home-made ingredients make it to your plate.
+              At Ayush Food Junction, transparency isn't just a buzzword—it's our foundation. We completely make home-cooked meals. Every herb, vegetable, and grain is sourced directly from Lawgate's local farmers or harvested from our own kitchen garden, ensuring that only the freshest home-made ingredients make it to your plate.
             </p>
             <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col items-center text-center">
@@ -85,13 +85,22 @@ const Home = ({ setCurrentPage }) => {
             <div className="flex-1 space-y-8">
               <div>
                 <h2 className="font-playfair text-4xl font-bold mb-4">
-                  Visit Our Kitchen
+                  Visit & Contact
                 </h2>
-                <div className="flex items-start gap-3">
-                  <MapPin className="text-orange-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-bold text-xl">Lawgate Area</h3>
-                    <p className="text-gray-300">The heart of the valley, right where the fresh air meets the fields.</p>
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="text-orange-primary mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-bold text-xl">Lawgate and Green Valley Centre</h3>
+                      <p className="text-gray-300">Front of Micasa PG</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Phone className="text-orange-primary mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-bold text-xl">Contact Number</h3>
+                      <p className="text-gray-300">+91 97795 09769</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -104,24 +113,38 @@ const Home = ({ setCurrentPage }) => {
                   <Clock className="text-orange-primary mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-bold text-xl">Open Daily</h3>
-                    <p className="text-gray-300">9:00 AM – 10:00 PM</p>
+                    <p className="text-gray-300">5:00 PM – 6:00 AM</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div className="flex-1 w-full relative">
-              <div className="bg-white p-2 rounded-xl shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                <img 
-                  src="/assets/images/map.png" 
-                  alt="Valley Map Illustration" 
-                  className="w-full h-auto rounded-lg"
-                />
-                <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur px-4 py-3 rounded-lg shadow-lg">
-                  <p className="font-playfair font-bold text-brown-dark">Ayush Kitchen</p>
-                  <p className="text-xs text-green-dark">Freshness starts here</p>
+              <a 
+                href="https://maps.app.goo.gl/kNY7Xi7ddHGMQcYW7" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block bg-white p-2 rounded-xl shadow-2xl transform rotate-1 hover:rotate-0 transition-transform duration-300 cursor-pointer relative"
+              >
+                <div className="w-full h-64 sm:h-80 rounded-lg overflow-hidden relative">
+                  <iframe 
+                    src="https://maps.google.com/maps?q=Sahil+PG,+Bahri+House,+Law+Gate,+Phagwara&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                    width="100%" 
+                    height="100%" 
+                    style={{ border: 0 }} 
+                    allowFullScreen="" 
+                    loading="lazy"
+                    title="Live Location"
+                  ></iframe>
+                  {/* Invisible overlay so the entire card remains clickable to open the actual Maps link */}
+                  <div className="absolute inset-0 bg-transparent z-10"></div>
                 </div>
-              </div>
+                
+                <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur px-4 py-3 rounded-lg shadow-lg z-20">
+                  <p className="font-playfair font-bold text-brown-dark">Ayush Food Junction</p>
+                  <p className="text-xs text-green-dark">Click to open full Google Maps</p>
+                </div>
+              </a>
             </div>
           </div>
         </div>

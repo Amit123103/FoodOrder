@@ -32,9 +32,27 @@ function App() {
   // Save to localStorage when changed
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('gvk_menu_v3', JSON.stringify(menuItems));
+      try {
+        localStorage.setItem('gvk_menu_v3', JSON.stringify(menuItems));
+      } catch (e) {
+        console.error("Storage error:", e);
+        if (e.name === 'QuotaExceededError') {
+          alert('Failed to save menu! The images you uploaded are taking up too much space. Try using smaller images or deleting some old items.');
+        }
+      }
     }
   }, [menuItems, isLoaded]);
+
+  // Sync menu across multiple tabs/windows instantly (perfect live updates)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'gvk_menu_v3' && e.newValue) {
+        setMenuItems(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Actions
   const addToCart = (item) => {
