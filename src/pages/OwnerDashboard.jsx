@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { LogOut, Trash2, Edit2, Check, X } from 'lucide-react';
+import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems }) => {
   const [newItem, setNewItem] = useState({
@@ -67,34 +69,42 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     }
   };
 
-  const handleAddItem = (e) => {
+  const handleAddItem = async (e) => {
     e.preventDefault();
     if (!newItem.name || !newItem.price) return;
     
-    if (editingId) {
-      setMenuItems(menuItems.map(item => 
-        item.id === editingId ? { ...item, ...newItem, price: parseInt(newItem.price, 10) || 0 } : item
-      ));
-      setEditingId(null);
-    } else {
-      const itemToAdd = {
-        ...newItem,
-        id: Date.now().toString(),
-        price: parseInt(newItem.price, 10) || 0
-      };
-      setMenuItems([...menuItems, itemToAdd]);
+    try {
+      if (editingId) {
+        // Update existing item in Firestore
+        const itemRef = doc(db, 'menuItems', editingId);
+        await updateDoc(itemRef, {
+          ...newItem,
+          price: parseInt(newItem.price, 10) || 0
+        });
+        setEditingId(null);
+      } else {
+        // Add new item to Firestore
+        await addDoc(collection(db, 'menuItems'), {
+          ...newItem,
+          price: parseInt(newItem.price, 10) || 0,
+          createdAt: new Date().toISOString()
+        });
+      }
+      
+      // Reset form
+      setNewItem({
+        name: '',
+        category: 'Starters',
+        price: '',
+        description: '',
+        available: true,
+        emoji: '🍽️',
+        image: '/assets/images/default-food.jpg'
+      });
+    } catch (error) {
+      console.error("Error saving to Firestore:", error);
+      alert("Failed to save food item. Check console.");
     }
-    
-    // Reset form
-    setNewItem({
-      name: '',
-      category: 'Starters',
-      price: '',
-      description: '',
-      available: true,
-      emoji: '🍽️',
-      image: '/assets/images/default-food.jpg'
-    });
   };
 
   const startEdit = (item) => {
@@ -130,9 +140,14 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     ));
   };
 
-  const deleteItem = (id) => {
+  const deleteItem = async (id) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      setMenuItems(menuItems.filter(item => item.id !== id));
+      try {
+        await deleteDoc(doc(db, 'menuItems', id));
+      } catch (error) {
+        console.error("Error deleting from Firestore:", error);
+        alert("Failed to delete item.");
+      }
     }
   };
 

@@ -7,6 +7,8 @@ import Checkout from './pages/Checkout';
 import OwnerLogin from './pages/OwnerLogin';
 import OwnerDashboard from './pages/OwnerDashboard';
 import { defaultMenuItems } from './data';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
 
 function App() {
   // State
@@ -15,43 +17,39 @@ function App() {
   const [menuItems, setMenuItems] = useState([]);
   const [isOwnerLoggedIn, setIsOwnerLoggedIn] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
 
-  // Load from localStorage on mount
+  // Load real-time data from Firebase Firestore
   useEffect(() => {
-    const savedMenu = localStorage.getItem('gvk_menu_v3');
-    if (savedMenu) {
-      setMenuItems(JSON.parse(savedMenu));
-    } else {
-      setMenuItems(defaultMenuItems);
-      localStorage.setItem('gvk_menu_v3', JSON.stringify(defaultMenuItems));
-    }
-    
+    // Listen to menuItems collection
+    const unsubMenu = onSnapshot(collection(db, 'menuItems'), (snapshot) => {
+      const items = [];
+      snapshot.forEach(doc => {
+        items.push({ id: doc.id, ...doc.data() });
+      });
+      
+      // Optional: if database is completely empty on first run, you might want to manually 
+      // add default data via the admin panel. For now, we just set whatever is in DB.
+      setMenuItems(items);
+    });
+
+    // Listen to feedbacks collection
+    const unsubFeedbacks = onSnapshot(collection(db, 'feedbacks'), (snapshot) => {
+      const fb = [];
+      snapshot.forEach(doc => {
+        fb.push({ id: doc.id, ...doc.data() });
+      });
+      // Sort newest first
+      fb.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setFeedbacks(fb);
+    });
+
     setIsLoaded(true);
-  }, []);
 
-  // Save to localStorage when changed
-  useEffect(() => {
-    if (isLoaded) {
-      try {
-        localStorage.setItem('gvk_menu_v3', JSON.stringify(menuItems));
-      } catch (e) {
-        console.error("Storage error:", e);
-        if (e.name === 'QuotaExceededError') {
-          alert('Failed to save menu! The images you uploaded are taking up too much space. Try using smaller images or deleting some old items.');
-        }
-      }
-    }
-  }, [menuItems, isLoaded]);
-
-  // Sync menu across multiple tabs/windows instantly (perfect live updates)
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'gvk_menu_v3' && e.newValue) {
-        setMenuItems(JSON.parse(e.newValue));
-      }
+    return () => {
+      unsubMenu();
+      unsubFeedbacks();
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Actions
@@ -86,11 +84,11 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home setCurrentPage={setCurrentPage} />;
+        return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} />;
       case 'menu':
         return <Menu menuItems={menuItems} cart={cart} addToCart={addToCart} removeFromCart={removeFromCart} />;
       case 'checkout':
-        return <Checkout cart={cart} cartTotal={cartTotal} setCart={setCart} setCurrentPage={setCurrentPage} />;
+        return <Checkout cart={cart} cartTotal={cartTotal} setCart={setCart} setCurrentPage={setCurrentPage} setFeedbacks={setFeedbacks} />;
       case 'owner_login':
         return <OwnerLogin setIsOwnerLoggedIn={setIsOwnerLoggedIn} setCurrentPage={setCurrentPage} />;
       case 'owner_dashboard':
@@ -105,7 +103,7 @@ function App() {
           <OwnerLogin setIsOwnerLoggedIn={setIsOwnerLoggedIn} setCurrentPage={setCurrentPage} />
         );
       default:
-        return <Home setCurrentPage={setCurrentPage} />;
+        return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} />;
     }
   };
 

@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { Lock, MessageCircle } from 'lucide-react';
+import { Lock, MessageCircle, Star } from 'lucide-react';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 const OWNER_WHATSAPP_NUMBER = "919779509769"; // <-- Change this to your actual WhatsApp number
 
-const Checkout = ({ cart, cartTotal, setCart, setCurrentPage }) => {
+const Checkout = ({ cart, cartTotal, setCart, setCurrentPage, setFeedbacks }) => {
+  const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [feedbackText, setFeedbackText] = useState('');
+  
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
@@ -39,10 +45,90 @@ const Checkout = ({ cart, cartTotal, setCart, setCurrentPage }) => {
     const whatsappUrl = `https://wa.me/${OWNER_WHATSAPP_NUMBER}?text=${message}`;
     window.open(whatsappUrl, '_blank');
 
-    // Clear the cart and reset to home
+    // Clear the cart and show feedback screen
     setCart([]);
+    setIsOrderSubmitted(true);
+  };
+
+  const handleFeedbackSubmit = async () => {
+    try {
+      await addDoc(collection(db, 'feedbacks'), {
+        name: formData.name || 'Anonymous Guest',
+        rating,
+        text: feedbackText,
+        date: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error saving feedback:", error);
+    }
     setCurrentPage('home');
   };
+
+  const handleSkipFeedback = () => {
+    setCurrentPage('home');
+  };
+
+  if (isOrderSubmitted) {
+    return (
+      <div className="w-full pb-20 pt-12 px-4 flex items-center justify-center min-h-[60vh]">
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center border border-gray-100">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">🎉</span>
+          </div>
+          <h2 className="font-playfair text-3xl font-bold text-brown-dark mb-2">
+            Order Sent!
+          </h2>
+          <p className="text-gray-600 mb-8">
+            Thank you for ordering from Ayush Food Junction. We'd love to hear about your experience!
+          </p>
+          
+          <div className="mb-6">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Rate your experience</p>
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className="focus:outline-none transition-transform hover:scale-110"
+                >
+                  <Star 
+                    size={36} 
+                    fill={star <= rating ? "#F59E0B" : "none"} 
+                    color={star <= rating ? "#F59E0B" : "#D1D5DB"} 
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="mb-8">
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="Tell us what you loved... (Optional)"
+              className="w-full border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-cream focus:bg-white resize-none"
+              rows="3"
+            ></textarea>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button 
+              onClick={handleSkipFeedback}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl transition-colors"
+            >
+              Skip
+            </button>
+            <button 
+              onClick={handleFeedbackSubmit}
+              className="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg"
+            >
+              Submit Review
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full pb-20">

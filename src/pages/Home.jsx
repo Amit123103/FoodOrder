@@ -1,7 +1,7 @@
 import React from 'react';
-import { MapPin, Clock, Leaf, Truck, Utensils, Phone } from 'lucide-react';
+import { MapPin, Clock, Leaf, Truck, Utensils, Phone, Star } from 'lucide-react';
 
-const Home = ({ setCurrentPage }) => {
+const Home = ({ setCurrentPage, feedbacks = [] }) => {
   return (
     <div className="w-full">
       {/* Hero Section */}
@@ -77,6 +77,43 @@ const Home = ({ setCurrentPage }) => {
           </div>
         </div>
       </section>
+
+      {/* Customer Reviews Section */}
+      {feedbacks.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="font-playfair text-4xl font-bold text-brown-dark mb-4">
+              What Our Customers Say
+            </h2>
+            <p className="text-gray-600">Real feedback from real food lovers.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {feedbacks.slice(0, 6).map((fb) => (
+              <div key={fb.id} className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star 
+                      key={star} 
+                      size={18} 
+                      fill={star <= fb.rating ? "#F59E0B" : "none"} 
+                      color={star <= fb.rating ? "#F59E0B" : "#D1D5DB"} 
+                    />
+                  ))}
+                </div>
+                <p className="text-gray-700 italic flex-grow mb-4">
+                  "{fb.text || "Delicious home-made food! Highly recommended!"}"
+                </p>
+                <div className="border-t border-gray-100 pt-4 mt-auto flex items-center justify-between">
+                  <p className="font-bold text-brown-dark">{fb.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(fb.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Visit Section */}
       <section className="bg-green-sage text-white py-20">

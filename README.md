@@ -1,16 +1,61 @@
-# React + Vite
+# Ayush Food Junction
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A complete restaurant ordering system and admin dashboard built with React, Vite, and TailwindCSS.
 
-Currently, two official plugins are available:
+## 🔐 Admin OTP Login Instructions
+The Owner Portal uses a **Simulated 4-Digit Mobile OTP System** for prototype testing without incurring SMS costs.
+To access the Admin Dashboard:
+1. Navigate to the Owner Portal.
+2. The input will default to the owner's mobile number: `+91 9779509769`.
+3. Click **Send OTP**.
+4. Your browser will instantly display an `alert()` pop-up containing a secure 4-digit code (simulating a text message).
+5. Enter that 4-digit code into the screen and click **Verify & Login**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🔥 Firebase Setup Instructions
 
-## React Compiler
+The app is now fully integrated with Firebase Cloud Firestore for permanent data storage! If you are deploying this or setting up the database for the first time, follow these crucial steps in your Firebase Console:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Enable Firestore Database
+- Go to your [Firebase Console](https://console.firebase.google.com/).
+- In the left sidebar under **Build**, click on **Firestore Database**.
+- Click **Create Database**.
+- Choose a location closest to your users.
+- Start in **Test Mode** (or see security rules below if going to production).
 
-## Expanding the ESLint configuration
+### 2. Firestore Security Rules
+By default, test mode expires after 30 days. To ensure your app continues to work permanently, you need to update the database Security Rules.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Go to the **Rules** tab in Firestore and replace the code with this:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Anyone can read menu items, but only the app can write (currently open for admin simplicity)
+    match /menuItems/{document=**} {
+      allow read, write: if true; 
+    }
+    
+    // Anyone can read and write feedbacks
+    match /feedbacks/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+*(Note: In a real enterprise app, you would lock down `write` access on `menuItems` using Firebase Authentication. Since this app uses a custom frontend password system, we leave Firestore open but rely on the React frontend to hide the admin dashboard).*
+
+### 3. Local Environment Setup
+Ensure your `.env` file exists in the root of the project with the keys you registered:
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+...
+```
+
+### 4. Running the App
+Run the following commands to start your local server:
+```bash
+npm install
+npm run dev
+```
