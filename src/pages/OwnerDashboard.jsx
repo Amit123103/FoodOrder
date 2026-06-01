@@ -168,21 +168,32 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
 
         let uploadedCount = 0;
         
-        for (const row of jsonData) {
-          const name = row.Name || row.name;
-          const price = row.Price || row.price;
-          if (!name || price === undefined) continue;
+        // Normalize keys to handle spaces and case differences
+        const normalizedJsonData = jsonData.map(row => {
+          const normalizedRow = {};
+          for (const key in row) {
+            if (Object.hasOwnProperty.call(row, key)) {
+              normalizedRow[key.trim().toLowerCase()] = row[key];
+            }
+          }
+          return normalizedRow;
+        });
+        
+        for (const row of normalizedJsonData) {
+          const name = row.name;
+          const price = row.price;
+          if (!name || price === undefined || price === null || price === '') continue;
 
-          const category = row.Category || row.category || categories[0] || 'Starters';
-          const description = row.Description || row.description || '';
-          const imageUrl = row.ImageURL || row.imageURL || row.Image || row.image || '/assets/images/default-food.jpg';
-          const available = row.Available !== undefined ? (row.Available === 'TRUE' || row.Available === true || row.Available === 'true' || row.Available === 'Yes' || row.Available === 'yes' || row.Available === 1) : true;
+          const category = row.category || categories[0] || 'Starters';
+          const description = row.description || '';
+          const imageUrl = row.imageurl || row.image || '/assets/images/default-food.jpg';
+          const available = row.available !== undefined ? (String(row.available).trim().toLowerCase() === 'true' || String(row.available).trim().toLowerCase() === 'yes' || row.available === 1 || row.available === true) : true;
           
           await addDoc(collection(db, 'menuItems'), {
-            name,
-            category,
+            name: String(name).trim(),
+            category: String(category).trim(),
             price: parseInt(price, 10) || 0,
-            description,
+            description: String(description).trim(),
             available,
             emoji: '🍽️',
             image: imageUrl,
