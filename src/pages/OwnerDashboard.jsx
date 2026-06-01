@@ -299,6 +299,28 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     }
   };
 
+  const handleDeleteAllItems = async () => {
+    if (menuItems.length === 0) return;
+    
+    const userInput = window.prompt('WARNING: This will permanently delete ALL menu items! Type "DELETE ALL" to confirm.');
+    if (userInput === 'DELETE ALL') {
+      try {
+        // Since we don't have a batch operation set up easily, we can just loop
+        for (const item of menuItems) {
+          if (item.id) {
+            await deleteDoc(doc(db, 'menuItems', item.id));
+          }
+        }
+        alert('All items have been deleted successfully.');
+      } catch (error) {
+        console.error("Error deleting all items:", error);
+        alert("Failed to delete all items. Check console.");
+      }
+    } else if (userInput !== null) {
+      alert('Confirmation failed. Items were not deleted.');
+    }
+  };
+
   return (
     <div className="bg-cream min-h-screen pb-20">
       {/* Dashboard Header */}
@@ -540,9 +562,20 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                 <h2 className="font-playfair text-xl font-bold text-brown-dark">
                   Manage Menu
                 </h2>
-                <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full">
-                  {menuItems.length} Items Total
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full">
+                    {menuItems.length} Items Total
+                  </span>
+                  {menuItems.length > 0 && (
+                    <button 
+                      onClick={handleDeleteAllItems}
+                      className="text-xs bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1 rounded-full font-bold transition-colors flex items-center gap-1"
+                      title="Delete All Items"
+                    >
+                      <Trash2 size={12} /> Delete All
+                    </button>
+                  )}
+                </div>
               </div>
               
               <div className="overflow-x-auto">
