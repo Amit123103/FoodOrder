@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LogOut, Trash2, Edit2, Check, X } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import * as XLSX from 'xlsx';
 
 const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems, isDeliveryAvailable, isShopOpen, categories = [] }) => {
   const [newItem, setNewItem] = useState({
@@ -16,6 +17,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
   });
   const [editingId, setEditingId] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
@@ -148,6 +150,66 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
       console.error("Error saving to Firestore:", error);
       alert("Failed to save food item. Check console.");
     }
+  };
+
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target.result;
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        let uploadedCount = 0;
+        
+        for (const row of jsonData) {
+          const name = row.Name || row.name;
+          const price = row.Price || row.price;
+          if (!name || price === undefined) continue;
+
+          const category = row.Category || row.category || categories[0] || 'Starters';
+          const description = row.Description || row.description || '';
+          const imageUrl = row.ImageURL || row.imageURL || row.Image || row.image || '/assets/images/default-food.jpg';
+          const available = row.Available !== undefined ? (row.Available === 'TRUE' || row.Available === true || row.Available === 'true' || row.Available === 'Yes' || row.Available === 'yes' || row.Available === 1) : true;
+          
+          await addDoc(collection(db, 'menuItems'), {
+            name,
+            category,
+            price: parseInt(price, 10) || 0,
+            description,
+            available,
+            emoji: '🍽️',
+            image: imageUrl,
+            createdAt: new Date().toISOString()
+          });
+          uploadedCount++;
+        }
+        
+        alert(`Successfully uploaded ${uploadedCount} items!`);
+      } catch (error) {
+        console.error("Error uploading Excel data:", error);
+        alert("Failed to upload Excel data. Please check the file format.");
+      } finally {
+        setIsUploading(false);
+        e.target.value = null; // Reset file input
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { Name: 'Sample Pizza', Category: 'Main Course', Price: 299, Description: 'Delicious cheesy pizza', Available: true, ImageURL: 'https://example.com/pizza.jpg' }
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "Food_Upload_Template.xlsx");
   };
 
   const startEdit = (item) => {
@@ -313,6 +375,42 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Bulk Upload Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h2 className="font-playfair text-xl font-bold text-brown-dark mb-4 border-b border-gray-100 pb-3 flex justify-between items-center">
+                Bulk Upload
+                <button 
+                  onClick={downloadTemplate}
+                  className="text-xs text-blue-500 hover:text-blue-700 font-normal"
+                >
+                  Download Template
+                </button>
+              </h2>
+              <div className="flex flex-col gap-3">
+                <p className="text-xs text-gray-500">
+                  Upload an Excel file (.xlsx) to add multiple menu items at once.
+                </p>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={handleExcelUpload}
+                    disabled={isUploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    id="excel-upload"
+                  />
+                  <label
+                    htmlFor="excel-upload"
+                    className={`flex justify-center items-center gap-2 w-full py-2.5 rounded-lg border-2 border-dashed font-bold transition-colors ${
+                      isUploading ? 'bg-gray-100 border-gray-300 text-gray-400' : 'border-teal-500 text-teal-600 hover:bg-teal-50 cursor-pointer'
+                    }`}
+                  >
+                    {isUploading ? 'Uploading...' : 'Upload Excel Data'}
+                  </label>
+                </div>
               </div>
             </div>
 
