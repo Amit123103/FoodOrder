@@ -168,26 +168,32 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
 
         let uploadedCount = 0;
         
-        // Normalize keys to handle spaces and case differences
+        // Normalize keys to handle spaces and case differences, stripping special characters
         const normalizedJsonData = jsonData.map(row => {
           const normalizedRow = {};
           for (const key in row) {
             if (Object.hasOwnProperty.call(row, key)) {
-              normalizedRow[key.trim().toLowerCase()] = row[key];
+              // lower case, remove all spaces and special characters
+              const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+              normalizedRow[cleanKey] = row[key];
             }
           }
           return normalizedRow;
         });
         
         for (const row of normalizedJsonData) {
-          const name = row.name;
-          const price = row.price;
+          const name = row.name || row.itemname;
+          const price = row.price || row.pricers;
           if (!name || price === undefined || price === null || price === '') continue;
 
           const category = row.category || categories[0] || 'Starters';
           const description = row.description || '';
           const imageUrl = row.imageurl || row.image || '/assets/images/default-food.jpg';
-          const available = row.available !== undefined ? (String(row.available).trim().toLowerCase() === 'true' || String(row.available).trim().toLowerCase() === 'yes' || row.available === 1 || row.available === true) : true;
+          
+          let availableVal = row.available;
+          if (availableVal === undefined) availableVal = row.availableonmenu;
+          
+          const available = availableVal !== undefined ? (String(availableVal).trim().toLowerCase() === 'true' || String(availableVal).trim().toLowerCase() === 'yes' || availableVal === 1 || availableVal === true) : true;
           
           await addDoc(collection(db, 'menuItems'), {
             name: String(name).trim(),
