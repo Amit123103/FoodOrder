@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { LogOut, Trash2, Edit2, Check, X } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import * as XLSX from 'xlsx';
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems, isDeliveryAvailable, isShopOpen, categories = [] }) => {
   const [newItem, setNewItem] = useState({
@@ -18,6 +20,13 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
   const [editingId, setEditingId] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // Crop State
+  const [imgSrc, setImgSrc] = useState('');
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const imgRef = useRef(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
@@ -73,45 +82,86 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     });
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+  const onSelectFile = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCrop(undefined); // Makes crop preview update between images.
       const reader = new FileReader();
-      reader.onloadend = () => {
-        // Compress image to prevent localStorage QuotaExceededError
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 500;
-          const MAX_HEIGHT = 500;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height && width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          } else if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Compress to JPEG
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
-          setNewItem(prev => ({
-            ...prev,
-            image: dataUrl
-          }));
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
+      reader.addEventListener('load', () => {
+        setImgSrc(reader.result?.toString() || '');
+        setIsCropModalOpen(true);
+      });
+      reader.readAsDataURL(e.target.files[0]);
+      e.target.value = null; // reset input
     }
+  };
+
+  const onImageLoad = (e) => {
+    const { width, height } = e.currentTarget;
+    // We want a square crop
+    const newCrop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        1,
+        width,
+        height
+      ),
+      width,
+      height
+    );
+    setCrop(newCrop);
+  };
+
+  const getCroppedImg = async () => {
+    const image = imgRef.current;
+    if (!image || !completedCrop) return;
+
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    // Set fixed max dimension for storage space saving
+    const MAX_DIMENSION = 500;
+    let targetWidth = completedCrop.width * scaleX;
+    let targetHeight = completedCrop.height * scaleY;
+
+    // Calculate scaling factor to fit MAX_DIMENSION
+    let ratio = 1;
+    if (targetWidth > MAX_DIMENSION) {
+        ratio = MAX_DIMENSION / targetWidth;
+    }
+    if (targetHeight * ratio > MAX_DIMENSION) {
+        ratio = MAX_DIMENSION / targetHeight;
+    }
+    
+    const finalWidth = targetWidth * ratio;
+    const finalHeight = targetHeight * ratio;
+
+    canvas.width = finalWidth;
+    canvas.height = finalHeight;
+    const ctx = canvas.getContext('2d');
+
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      image,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
+      0,
+      0,
+      finalWidth,
+      finalHeight
+    );
+
+    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+    setNewItem(prev => ({
+      ...prev,
+      image: base64Image
+    }));
+    setIsCropModalOpen(false);
   };
 
   const handleAddItem = async (e) => {
@@ -499,15 +549,36 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Item Image</label>
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="w-full border border-gray-200 rounded p-1.5 focus:ring-1 focus:ring-teal-500 outline-none text-sm text-gray-600"
-                  />
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-2">Item Image</label>
+                  <div className="flex gap-2 mb-2">
+                    <div className="relative flex-1">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={onSelectFile}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        id="image-upload"
+                      />
+                      <label htmlFor="image-upload" className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded text-center text-sm cursor-pointer block border border-gray-300 transition-colors">
+                        📁 Upload
+                      </label>
+                    </div>
+                    <div className="relative flex-1">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        capture="environment"
+                        onChange={onSelectFile}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        id="camera-capture"
+                      />
+                      <label htmlFor="camera-capture" className="w-full bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold py-2 px-4 rounded text-center text-sm cursor-pointer block border border-teal-200 transition-colors flex items-center justify-center gap-1">
+                        📸 Camera
+                      </label>
+                    </div>
+                  </div>
                   {newItem.image && newItem.image !== '/assets/images/default-food.jpg' && (
-                    <img src={newItem.image} alt="Preview" className="mt-2 h-16 w-24 object-cover rounded shadow-sm border border-gray-100" />
+                    <img src={newItem.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-lg shadow-sm border border-gray-200" />
                   )}
                 </div>
                 
@@ -639,6 +710,55 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
           
         </div>
       </div>
+      
+      {/* Crop Modal */}
+      {isCropModalOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-800">Crop Image (1:1 Ratio)</h3>
+              <button onClick={() => setIsCropModalOpen(false)} className="text-gray-500 hover:text-red-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 bg-gray-100 flex items-center justify-center overflow-auto max-h-[60vh]">
+              {!!imgSrc && (
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percentCrop) => setCrop(percentCrop)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={1}
+                  className="max-h-full"
+                >
+                  <img
+                    ref={imgRef}
+                    alt="Crop me"
+                    src={imgSrc}
+                    onLoad={onImageLoad}
+                    className="max-h-[50vh] object-contain"
+                  />
+                </ReactCrop>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
+              <button 
+                onClick={() => setIsCropModalOpen(false)}
+                className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={getCroppedImg}
+                className="px-6 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1"
+              >
+                <Check size={16} /> Crop & Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
