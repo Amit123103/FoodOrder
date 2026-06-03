@@ -64,15 +64,15 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     }
   };
 
-  const toggleGlobalDelivery = async () => {
+  const toggleShopStatus = async () => {
     try {
       const settingsRef = doc(db, 'menuItems', '_store_settings_');
       await setDoc(settingsRef, {
-        isDeliveryAvailable: !isDeliveryAvailable
+        isShopOpen: !isShopOpen
       }, { merge: true });
     } catch (error) {
-      console.error("Error toggling delivery:", error);
-      alert("Failed to update delivery settings.");
+      console.error("Error toggling shop status:", error);
+      alert("Failed to update shop status.");
     }
   };
 
