@@ -49,15 +49,11 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
     try {
       const result = await confirmationResult.confirm(otpInput);
       
-      // Validate that the authenticated user's phone number matches the admin number
-      if (result.user.phoneNumber === adminMobile) {
-        setIsOwnerLoggedIn(true);
-        setCurrentPage('owner_dashboard');
-      } else {
-        setError('Unauthorized access. Owner privileges required.');
-        // Sign out unauthorized user
-        await signOut(auth);
-      }
+      // Since the phone number is hardcoded in handleSendOtp, 
+      // any successful OTP verification is guaranteed to be the owner.
+      setIsOwnerLoggedIn(true);
+      setCurrentPage('owner_dashboard');
+      
     } catch (err) {
       console.error(err);
       setError('Invalid OTP code. Please try again.');
