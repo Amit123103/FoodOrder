@@ -48,13 +48,9 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
     
     try {
       const result = await confirmationResult.confirm(otpInput);
-      // Validate owner UID
-      const validUids = [
-        'hFd2WOQr7pd1gdYl1Ace3gyOHku1',
-        'AdpetEZgy4tpc08xw7b9yB4alhSMWkTsE9mP-TdlrOxxa6vcu2PykUVXO43ZezrtIKEEOclLOzLu_5HjUySLt3z0GCHhUp-3kgQ_5A2yRy50O8hruMr91-kEl19Sq9Xc77lB52NpLvZPDKUlb1NSsxMMRA'
-      ];
       
-      if (validUids.includes(result.user.uid)) {
+      // Validate that the authenticated user's phone number matches the admin number
+      if (result.user.phoneNumber === adminMobile) {
         setIsOwnerLoggedIn(true);
         setCurrentPage('owner_dashboard');
       } else {
