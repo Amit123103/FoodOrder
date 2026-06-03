@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems, isDeliveryAvailable, isShopOpen, categories = [] }) => {
+const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenuItems, isDeliveryAvailable, isShopOpen, categories = [], shopTiming }) => {
   const [newItem, setNewItem] = useState({
     name: '',
     category: categories[0] || 'Starters',
@@ -20,6 +20,13 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
   const [editingId, setEditingId] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // Shop Timing state
+  const [localTiming, setLocalTiming] = useState(shopTiming || '');
+
+  React.useEffect(() => {
+    if (shopTiming) setLocalTiming(shopTiming);
+  }, [shopTiming]);
 
   // Crop State
   const [imgSrc, setImgSrc] = useState('');
@@ -57,15 +64,28 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
     }
   };
 
-  const toggleShopStatus = async () => {
+  const toggleGlobalDelivery = async () => {
     try {
       const settingsRef = doc(db, 'menuItems', '_store_settings_');
       await setDoc(settingsRef, {
-        isShopOpen: !isShopOpen
+        isDeliveryAvailable: !isDeliveryAvailable
       }, { merge: true });
     } catch (error) {
-      console.error("Error toggling shop status:", error);
-      alert("Failed to update shop status.");
+      console.error("Error toggling delivery:", error);
+      alert("Failed to update delivery settings.");
+    }
+  };
+
+  const handleUpdateTiming = async () => {
+    try {
+      const settingsRef = doc(db, 'menuItems', '_store_settings_');
+      await setDoc(settingsRef, {
+        shopTiming: localTiming
+      }, { merge: true });
+      alert("Shop hours updated successfully!");
+    } catch (error) {
+      console.error("Error updating timing:", error);
+      alert("Failed to update shop hours.");
     }
   };
 
@@ -399,7 +419,7 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
             <p className="text-sm text-gray-500">Manage your restaurant's global availability.</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto flex-wrap md:flex-nowrap">
             {/* Shop Status Toggle */}
             <div className="flex items-center justify-between gap-4 bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 flex-1 md:flex-none">
               <span className={`font-bold text-sm ${isShopOpen ? 'text-green-600' : 'text-red-500'}`}>
@@ -423,6 +443,23 @@ const OwnerDashboard = ({ setIsOwnerLoggedIn, setCurrentPage, menuItems, setMenu
                 className={`relative inline-flex items-center h-8 rounded-full w-14 transition-colors focus:outline-none ${isDeliveryAvailable ? 'bg-teal-500' : 'bg-gray-300'}`}
               >
                 <span className={`inline-block w-6 h-6 transform bg-white rounded-full shadow-sm transition-transform ${isDeliveryAvailable ? 'translate-x-7' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            
+            {/* Timing Input */}
+            <div className="flex items-center justify-between gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 flex-1 md:flex-none">
+              <input 
+                type="text"
+                value={localTiming}
+                onChange={(e) => setLocalTiming(e.target.value)}
+                placeholder="e.g. 5:00 PM - 6:00 AM"
+                className="bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none focus:border-teal-500 w-40 text-gray-700 font-bold"
+              />
+              <button 
+                onClick={handleUpdateTiming}
+                className="bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold py-1.5 px-3 rounded transition-colors shadow-sm whitespace-nowrap"
+              >
+                Update Hours
               </button>
             </div>
           </div>

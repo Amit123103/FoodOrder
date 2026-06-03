@@ -20,6 +20,7 @@ function App() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [isDeliveryAvailable, setIsDeliveryAvailable] = useState(true);
   const [isShopOpen, setIsShopOpen] = useState(true);
+  const [shopTiming, setShopTiming] = useState('5:00 PM - 6:00 AM Daily');
   const [categories, setCategories] = useState(['Starters', 'Main Course', 'Drinks', 'Desserts', 'Snacks', 'Ice Creams', 'Groceries', 'Cigarettes']);
 
   // Load real-time data from Firebase Firestore
@@ -59,9 +60,12 @@ function App() {
         if (data.isShopOpen !== undefined) {
           setIsShopOpen(data.isShopOpen);
         }
+        if (data.shopTiming !== undefined) {
+          setShopTiming(data.shopTiming);
+        }
       } else {
         // Create the doc if it doesn't exist
-        setDoc(doc(db, 'menuItems', '_store_settings_'), { isDeliveryAvailable: true, isShopOpen: true });
+        setDoc(doc(db, 'menuItems', '_store_settings_'), { isDeliveryAvailable: true, isShopOpen: true, shopTiming: '5:00 PM - 6:00 AM Daily' });
       }
     });
 
@@ -161,7 +165,7 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} />;
+        return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} shopTiming={shopTiming} />;
       case 'menu':
         return <Menu menuItems={menuItems} cart={cart} addToCart={addToCart} removeFromCart={removeFromCart} isShopOpen={isShopOpen} categories={categories} />;
       case 'checkout':
@@ -178,12 +182,13 @@ function App() {
             isDeliveryAvailable={isDeliveryAvailable}
             isShopOpen={isShopOpen}
             categories={categories}
+            shopTiming={shopTiming}
           />
         ) : (
           <OwnerLogin setIsOwnerLoggedIn={setIsOwnerLoggedIn} setCurrentPage={setCurrentPage} />
         );
       default:
-        return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} />;
+        return <Home setCurrentPage={setCurrentPage} feedbacks={feedbacks} shopTiming={shopTiming} />;
     }
   };
 
@@ -207,12 +212,18 @@ function App() {
         </div>
       )}
       
+      {isCustomerPage && isShopOpen && shopTiming && (
+        <div className="bg-green-sage text-white text-center py-2 text-sm font-bold shadow-md relative z-10 flex items-center justify-center gap-2">
+          <span>🕒</span> <span>Today's Hours: {shopTiming}</span>
+        </div>
+      )}
+      
       <main className="flex-grow flex flex-col">
         {renderPage()}
       </main>
       
       {currentPage !== 'owner_dashboard' && currentPage !== 'owner_login' && (
-        <Footer setCurrentPage={setCurrentPage} />
+        <Footer setCurrentPage={setCurrentPage} shopTiming={shopTiming} />
       )}
     </div>
   );

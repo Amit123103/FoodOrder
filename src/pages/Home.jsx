@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPin, Clock, Leaf, Truck, Utensils, Phone, Star } from 'lucide-react';
 
-const Home = ({ setCurrentPage, feedbacks = [] }) => {
+const Home = ({ setCurrentPage, feedbacks = [], shopTiming }) => {
   return (
     <div className="w-full">
       {/* Hero Section */}
@@ -150,7 +150,7 @@ const Home = ({ setCurrentPage, feedbacks = [] }) => {
                   <Clock className="text-orange-primary mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-bold text-xl">Open Daily</h3>
-                    <p className="text-gray-300">5:00 PM – 6:00 AM</p>
+                    <p className="text-gray-300">{shopTiming || '5:00 PM – 6:00 AM'}</p>
                   </div>
                 </div>
               </div>

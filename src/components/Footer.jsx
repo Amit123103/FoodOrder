@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Footer = ({ setCurrentPage }) => {
+const Footer = ({ setCurrentPage, shopTiming }) => {
   return (
     <footer className="bg-white py-12 mt-12 border-t border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,7 +23,7 @@ const Footer = ({ setCurrentPage }) => {
             <ul className="space-y-2 text-sm text-gray-600">
               <li>Address: Lawgate and Green Valley Centre, Front of Micasa PG</li>
               <li>Contact: +91 97795 09769</li>
-              <li>Hours: 5:00 PM - 6:00 AM Daily</li>
+              <li>Hours: {shopTiming || '5:00 PM - 6:00 AM Daily'}</li>
             </ul>
           </div>
           
