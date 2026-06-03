@@ -30,7 +30,8 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
       setConfirmationResult(result);
       setStep('otp');
     } catch (err) {
-      console.warn("Firebase Phone Auth Failed, falling back to simulated OTP.", err);
+      console.error("Firebase Phone Auth Failed:", err);
+      setError(err.message || 'Failed to send OTP. Please check your Firebase configuration.');
       
       // Reset reCAPTCHA so the user can try again
       if (window.recaptchaVerifier) {
@@ -38,18 +39,6 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
           window.grecaptcha.reset(widgetId);
         });
       }
-
-      // Fallback: Simulate OTP for seamless login if Firebase isn't configured
-      const mockOtp = "123456"; // Fixed OTP for easy access
-      alert(`[SIMULATED SMS]\n\nYour Owner Login OTP is: ${mockOtp}\n\n(Note: This fallback appears because Firebase Phone Auth is not enabled or configured in your Firebase Console)`);
-      
-      setConfirmationResult({
-        confirm: async (code) => {
-          if (code === mockOtp) return { user: { phoneNumber: adminMobile, uid: 'hFd2WOQr7pd1gdYl1Ace3gyOHku1' } };
-          throw new Error("Invalid simulated OTP");
-        }
-      });
-      setStep('otp');
     }
   };
 
