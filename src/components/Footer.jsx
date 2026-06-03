@@ -11,7 +11,7 @@ const Footer = ({ setCurrentPage }) => {
               Ayush Food Junction
             </h2>
             <p className="text-gray-600 text-sm">
-              © 2024 Ayush Food Junction. Fresh from Lawgate to your table. Handcrafted with love.
+              © 2026 Ayush Food Junction. Fresh from Lawgate to your table. Handcrafted with love.
             </p>
           </div>
           
