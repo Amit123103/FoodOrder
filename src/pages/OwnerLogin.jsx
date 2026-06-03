@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, signInWithPhoneNumber, signOut } from 'firebase/auth';
 
 const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
   const [step, setStep] = useState('mobile');
@@ -31,13 +31,21 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
       setStep('otp');
     } catch (err) {
       console.warn("Firebase Phone Auth Failed, falling back to simulated OTP.", err);
+      
+      // Reset reCAPTCHA so the user can try again
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then(function(widgetId) {
+          window.grecaptcha.reset(widgetId);
+        });
+      }
+
       // Fallback: Simulate OTP for seamless login if Firebase isn't configured
       const mockOtp = "123456"; // Fixed OTP for easy access
       alert(`[SIMULATED SMS]\n\nYour Owner Login OTP is: ${mockOtp}\n\n(Note: This fallback appears because Firebase Phone Auth is not enabled or configured in your Firebase Console)`);
       
       setConfirmationResult({
         confirm: async (code) => {
-          if (code === mockOtp) return { user: { phoneNumber: adminMobile } };
+          if (code === mockOtp) return { user: { phoneNumber: adminMobile, uid: 'hFd2WOQr7pd1gdYl1Ace3gyOHku1' } };
           throw new Error("Invalid simulated OTP");
         }
       });
@@ -50,9 +58,16 @@ const OwnerLogin = ({ setIsOwnerLoggedIn, setCurrentPage }) => {
     if (!confirmationResult) return;
     
     try {
-      await confirmationResult.confirm(otpInput);
-      setIsOwnerLoggedIn(true);
-      setCurrentPage('owner_dashboard');
+      const result = await confirmationResult.confirm(otpInput);
+      // Validate owner UID
+      if (result.user.uid === 'hFd2WOQr7pd1gdYl1Ace3gyOHku1') {
+        setIsOwnerLoggedIn(true);
+        setCurrentPage('owner_dashboard');
+      } else {
+        setError('Unauthorized access. Owner privileges required.');
+        // Sign out unauthorized user
+        await signOut(auth);
+      }
     } catch (err) {
       console.error(err);
       setError('Invalid OTP code. Please try again.');
